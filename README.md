@@ -1,65 +1,134 @@
-# sandbox-app-template
+# Plato — Page Builder pour Restaurants
 
-Monorepo: Bun workspaces + Turborepo.
+## Stack
+- **Frontend** : React 19 + Vite + Wouter
+- **Backend** : Hono + Bun
+- **DB** : Turso (libSQL / SQLite)
+- **Auth** : Better-Auth
+- **Deploy** : Render (backend + frontend servis ensemble)
+- **CI/CD** : GitHub Actions → push main → deploy automatique
 
-## Project Structure
+---
 
-```
-.env                         Secrets (gitignored), loaded via Vite's loadEnv
-packages/
-  web/                       Unified server (API + web frontend via Vite)
-    vite.config.ts           Vite 7 config — loads .env, sets port, registers plugins
-    index.html               Frontend HTML entry
-    vite/plugins/
-      hono-dev-plugin.ts     Intercepts /api/* in dev, forwards to Hono via SSR
-      runable-analytics-plugin.ts
-    src/
-      api/
-        index.ts             Hono routes (.basePath('api')) + AppType export
-        database/
-          index.ts           Database client (Turso/LibSQL)
-          schema.ts          Drizzle schema
-      web/
-        main.tsx             App entry
-        app.tsx              Root component + Wouter routing
-        pages/               Page components
-        components/          UI components
-        hooks/
-          use-desktop.ts     Desktop detection
-        lib/
-          api.ts             Typed API client (hono client)
-          desktop.ts         Electron API types
-          utils.ts           Shared utilities
-        styles.css           Tailwind CSS entry
-  mobile/                    Expo + React Native + expo-router
-    app/                     File-based routing
-    lib/
-      api.ts                 Typed API client
-  desktop/                   Electron shell (loads web app from server)
-    electron/
-      main.ts                Main process + IPC handlers
-      preload.ts             contextBridge API
-    vite.config.ts           Vite config
+## 1. Installation locale
+
+```bash
+# Cloner
+git clone https://github.com/KemogneAlex/plato.git
+cd plato
+
+# Installer Bun si pas encore fait
+curl -fsSL https://bun.sh/install | bash
+
+# Installer les dépendances
+bun install
+
+# Copier les variables d'environnement
+cp .env.example .env
+# → Remplis .env avec tes vraies valeurs (voir section Variables)
 ```
 
-## Environment Variables
+---
 
-Secrets and credentials live in `.env` at the project root (gitignored). Vite's `loadEnv` loads them into `process.env` at dev/build time (configured in `packages/web/vite.config.ts`). In API code (Hono), use `process.env.YOUR_VAR`. In browser code, only `VITE_`-prefixed vars are exposed via `import.meta.env.VITE_YOUR_VAR`. Drizzle scripts use `bun --env-file=../../.env` to load env vars directly.
+## 2. Variables d'environnement
 
-## Desktop UI
+Copie `.env.example` → `.env` et remplis :
 
-The desktop app has no separate renderer by default. It loads the web app from `packages/web`; desktop-specific UI should live in `packages/web/src/web/` and be gated with `useDesktop()` / `window.electronAPI`. Keep `packages/desktop` for Electron window setup, menus/tray/shortcuts, IPC handlers, native OS APIs, and packaging. Only add a separate desktop renderer when the product intentionally needs a different desktop-only UI architecture.
+| Variable | Description | Où l'obtenir |
+|---|---|---|
+| `DATABASE_URL` | URL Turso | [turso.tech](https://turso.tech) → Create database |
+| `DATABASE_AUTH_TOKEN` | Token Turso | Turso dashboard → Generate token |
+| `BETTER_AUTH_SECRET` | Secret JWT | `openssl rand -base64 32` |
+| `BETTER_AUTH_URL` | URL de l'app | `http://localhost:3000` en dev |
+| `WEBSITE_URL` | URL frontend | `http://localhost:5173` en dev |
 
-## Servers
+---
 
-Dev servers are started and managed automatically — no need to run them manually.
+## 3. Dev local
 
-## Database
+```bash
+# Terminal 1 — API (port 3001)
+cd packages/web && bun src/server.ts
 
-```sh
-cd packages/web
-bun run db:push        # Push schema to database
-bun run db:generate    # Generate migration files
-bun run db:migrate     # Run migrations
-bun run db:studio      # Open Drizzle Studio
+# Terminal 2 — Frontend avec HMR (port 5173... ou 4200)
+cd packages/web && bun run dev
+```
+
+Ouvre **http://localhost:5173** (ou le port affiché par Vite).
+
+> En dev, Vite proxifie les requêtes `/api` vers le server Bun automatiquement (voir `vite/plugins/hono-dev-plugin.ts`).
+
+---
+
+## 4. Push → CI/CD automatique
+
+```bash
+git add .
+git commit -m "feat: ma nouvelle feature"
+git push origin main
+```
+
+→ GitHub Actions se déclenche :
+1. **Typecheck** (tsc --noEmit)
+2. **Build** (vite build)
+3. **Deploy** → envoie un webhook à Render qui redéploie
+
+**Durée** : ~3-4 minutes
+
+---
+
+## 5. Configurer Render (une seule fois)
+
+1. Va sur [render.com](https://render.com) → New Web Service
+2. Connecte ton GitHub → sélectionne le repo `plato`
+3. Render détecte `render.yaml` automatiquement
+4. Ajoute les variables d'environnement dans Render Dashboard :
+   - `DATABASE_URL`
+   - `DATABASE_AUTH_TOKEN`
+   - `BETTER_AUTH_SECRET`
+5. Une fois le premier deploy fait, récupère le **Deploy Hook URL** dans :
+   - Render Dashboard → Settings → Deploy Hook
+6. Dans GitHub repo → Settings → Secrets → Actions, ajoute :
+   - `RENDER_DEPLOY_HOOK_URL` = l'URL du deploy hook Render
+
+Ensuite chaque `git push main` déclenche le deploy automatiquement.
+
+---
+
+## 6. Base de données
+
+```bash
+# Appliquer le schema sur Turso
+bun run db:push
+
+# Générer les migrations
+bun run db:generate
+
+# Studio visuel (optionnel)
+bun run db:studio
+```
+
+---
+
+## Structure du projet
+
+```
+plato/
+├── packages/
+│   └── web/
+│       ├── src/
+│       │   ├── api/           # Backend Hono
+│       │   │   ├── database/  # Drizzle ORM + schema
+│       │   │   ├── routes/    # sites.ts, templates.ts
+│       │   │   └── auth.ts
+│       │   ├── server.ts      # Entry point Bun
+│       │   └── web/           # Frontend React
+│       │       ├── pages/     # editor.tsx, preview.tsx, dashboard.tsx...
+│       │       └── components/
+│       └── vite.config.ts
+├── .github/
+│   └── workflows/
+│       └── deploy.yml         # CI/CD
+├── render.yaml                # Config Render
+└── .env.example
 ```

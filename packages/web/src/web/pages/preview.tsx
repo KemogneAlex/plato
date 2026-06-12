@@ -229,7 +229,7 @@ function RenderedBlock({ block, mode }: { block: Block; mode: "desktop" | "mobil
             )}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 16, textAlign: "center" }}>
               <p style={{ fontSize: isMobile ? 11 : 13, color: p.textColor as string, opacity: 0.5 }}>{p.copyright as string}</p>
-              <p style={{ fontSize: 11, color: p.textColor as string, opacity: 0.3, marginTop: 4 }}>Créé avec Plato</p>
+
             </div>
           </div>
         </div>
@@ -331,7 +331,7 @@ export default function PreviewPage() {
               {/* Fallback footer si pas de bloc footer */}
               {!blocks.some(b => b.type === "footer") && (
                 <div style={{ padding: mode === "desktop" ? "24px 80px" : "18px 20px", background: "#1A1A2E", textAlign: "center" }}>
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{site?.name} · Créé avec Plato</p>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{site?.name}</p>
                 </div>
               )}
             </div>
