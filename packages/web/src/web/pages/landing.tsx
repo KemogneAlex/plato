@@ -139,11 +139,6 @@ export default function LandingPage() {
 
         <div className="max-w-6xl mx-auto px-6 py-20 md:py-28 relative">
           <div className="max-w-2xl animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6"
-              style={{ background: "rgba(255,255,255,0.2)", color: "white", backdropFilter: "blur(8px)" }}>
-              <Star size={12} fill="white" />
-              Utilisé par 500+ restaurants
-            </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: "white", fontFamily: "var(--font-display)" }}>
               Créez le site de votre restaurant{" "}
               <span style={{ color: "rgba(255,255,255,0.8)", fontStyle: "italic" }}>en minutes</span>
