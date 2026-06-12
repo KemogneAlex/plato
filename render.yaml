@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: plato
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: .
+    buildCommand: npm install -g bun && bun install && cd packages/web && bun run build
+    startCommand: cd packages/web && bun src/server.ts
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_AUTH_TOKEN
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: BETTER_AUTH_URL
+        fromService:
+          type: web
+          name: plato
+          property: host
+      - key: WEBSITE_URL
+        fromService:
+          type: web
+          name: plato
+          property: host
